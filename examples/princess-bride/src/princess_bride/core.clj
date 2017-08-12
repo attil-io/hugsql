@@ -53,102 +53,48 @@
      (ppsv ~@code)))
 
 (defn create-tables []
-  
-  (exsv (characters/create-characters-table-sqlvec))
-  (ex (characters/create-characters-table db))
-  (exsv (quotes/create-quotes-table-sqlvec))
-  (ex (quotes/create-quotes-table db)))
+  (characters/create-characters-table db)
+  (quotes/create-quotes-table db))
+
 
 (defn drop-tables []
+  (characters/drop-characters-table db)
+  (quotes/drop-quotes-table db))
 
-  (exsv (characters/drop-characters-table-sqlvec))
-  (ex (characters/drop-characters-table db))
-  (exsv (quotes/drop-quotes-table-sqlvec))
-  (ex (quotes/drop-quotes-table db)))
+(defn insert-character [ch-name ch-spec]
+  (characters/insert-character db {:name ch-name :specialty ch-spec}))
 
-(defn inserts []
+(defn update-character [ch-name new-ch-spec]
+    (let [character (characters/character-by-name db {:name ch-name})]
+      (characters/update-character-specialty db {:id (:id character)
+                                                 :specialty new-ch-spec})))
 
-  ;; single record
-  (exsv (characters/insert-character-sqlvec {:name "Westley" :specialty "love"}))
-  (ex (characters/insert-character db {:name "Westley" :specialty "love"}))
-
-  (ex (characters/insert-character db {:name "Buttercup" :specialty "beauty"}))
+(defn delete-character [ch-name]
+    (let [character (characters/character-by-name db {:name ch-name})]
+      (characters/delete-character-by-id db {:id (:id character)})))
 
 
-  ;; multiple records
-  (exsv (characters/insert-characters-sqlvec {:characters [["Vizzini" "intelligence"]
-                                                           ["Fezzik" "strength"]
-                                                           ["Inigo Montoya" "swordmanship"]]}))
+(defn character-by-name [ch-name] 
+    (characters/character-by-name db {:name ch-name}))
 
-  (ex (characters/insert-characters db {:characters [["Vizzini" "intelligence"]
-                                                     ["Fezzik" "strength"]
-                                                     ["Inigo Montoya" "swordmanship"]]}))
+(defn character-by-name-like [ch-name] 
+    (characters/characters-by-name-like db {:name-like ch-name}))
 
-  ;; transactions
-  (ex (clojure.java.jdbc/with-db-transaction [tx db]
-    (characters/insert-character tx {:name "Miracle Max" :specialty "miracles"})
-    (characters/insert-character tx {:name "Valerie" :specialty "speech interpreter"})))
-
-  )
-
-(defn updates []
-
-  (exsv
-    (let [vizzini (characters/character-by-name db {:name "vizzini"})]
-      (characters/update-character-specialty-sqlvec {:id (:id vizzini)
-                                                     :specialty "boasting"})))
-  (ex
-    (let [vizzini (characters/character-by-name db {:name "vizzini"})]
-      (characters/update-character-specialty db {:id (:id vizzini)
-                                                 :specialty "boasting"})))
-
-  )
-
-(defn deletes []
-
-  ;; spoiler alert; Vizzini dies, so let's delete him
-  (exsv
-    (let [vizzini (characters/character-by-name db {:name "vizzini"})]
-      (characters/delete-character-by-id-sqlvec {:id (:id vizzini)})))
-  (ex
-    (let [vizzini (characters/character-by-name db {:name "vizzini"})]
-      (characters/delete-character-by-id db {:id (:id vizzini)})))
-  )
-
-(defn selects []
-
-  (exsv (characters/all-characters-sqlvec))
-  (ex (characters/all-characters db))
-
-  (exsv (characters/character-by-id-sqlvec {:id 1}))
-  (ex (characters/character-by-id db {:id 1}))
-
-  (exsv (characters/character-by-name-sqlvec {:name "buttercup"}))
-  (ex (characters/character-by-name db {:name "buttercup"}))
-
-  (exsv (characters/characters-by-name-like-sqlvec {:name-like "%zz%"}))
-  (ex (characters/characters-by-name-like db {:name-like "%zz%"}))
-
-  (exsv (characters/characters-by-ids-specify-cols-sqlvec
-          {:ids [1 2]
-           :cols ["name" "specialty"]}))
-  (ex (characters/characters-by-ids-specify-cols db
-        {:ids [1 2]
-         :cols ["name" "specialty"]}))
-
-  )
-
+(defn character-by-id [ch-id] 
+    (characters/character-by-id db {:id ch-id}))
 
 (defn -main []
   
   (println "\n\"The Princess Bride\" HugSQL Example App\n\n")
 
-  (drop-tables) ;; if exists!
+  (drop-tables)
   (create-tables)
-  (inserts)
-  (updates)
-  (selects)  
-  (deletes)
+  (insert-character "geza", "computers")
+  (insert-character "gizi", "animals and plants")
+  (insert-character "jani", "holes")
+  (update-character "jani", "beer")
+  (let [octavio (character-by-name "jani")] (println (str "" octavio)))
   (drop-tables)
 
   (println "\n\nTHE END\n"))
+
